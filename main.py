@@ -2,17 +2,19 @@ import serial
 import serial.tools.list_ports
 from time import sleep
 
+from serial.tools.list_ports_common import ListPortInfo
+
 
 def openLidar():
-    comports = serial.tools.list_ports.comports();
+    comports = serial.tools.list_ports.comports()
     for i in comports:
         print(i)
 
-    comports = serial.tools.list_ports.grep('CH340');
-    comportList = list(comports)
-    portname = comportList[0].device
+    comports = serial.tools.list_ports.grep('CH340')
+    comportList: list[ListPortInfo] = list(comports)
+    portName = comportList[0].device
 
-    ser = serial.Serial(portname, 115200,
+    ser = serial.Serial(portName, 115200,
                         bytesize=serial.EIGHTBITS,
                         parity=serial.PARITY_NONE,
                         stopbits=serial.STOPBITS_ONE,
@@ -47,7 +49,7 @@ def findStart(ser):
 
 def getDatagram(ser, datafunc, eventfunc):
     datagram = ser.read(9)
-    #print(datagram.hex(':'))
+    # print(datagram.hex(':'))
     distL = datagram[2]
     distH = datagram[3]
     strengthL = datagram[4]
@@ -55,11 +57,11 @@ def getDatagram(ser, datafunc, eventfunc):
     tempL = datagram[6]
     tempH = datagram[7]
     checksum = datagram[8]
-    sum = 0
+    checksumCalculated = 0
     for i in range(8):
-        sum += datagram[i]
-    sum = sum & 0xFF
-    if checksum == sum:
+        checksumCalculated += datagram[i]
+    checksumCalculated = checksumCalculated & 0xFF
+    if checksum == checksumCalculated:
         datafunc(distH * 256 + distL, strengthH * 256 + strengthL, tempH * 256 + tempL)
     else:
         eventfunc('checksum failure. reset.')
@@ -80,5 +82,3 @@ if __name__ == '__main__':
     findStart(serial)
     while True:
         getDatagram(serial, processData, processEvent)
-
-

@@ -7,13 +7,16 @@ def findStart(ser):
         b = b'\x00'
         while b != b'\x59':
             b = ser.read()
-            print(b)
         b = ser.read()
         if b == b'\x59':
             break
     ser.read(7)
 
 def getdatastream():
+    comports = serial.tools.list_ports.comports();
+    for i in comports:
+        print(i)
+
     comports = serial.tools.list_ports.grep('CH340');
     comportList = list(comports)
     portname = comportList[0].device
@@ -47,7 +50,7 @@ def getdatastream():
         sum = 0
         for i in range(8):
             sum += datagram[i]
-        sum = sum & 255
+        sum = sum & 0xFF
         if checksum == sum:
             print('distance: %d strength: %d temperature: %d checksum: %d' %
                (distH * 256 + distL, strengthH * 256 + strengthL, tempH * 256 + tempL, checksum))

@@ -30,7 +30,7 @@ def initLidar(ser):
     # ser.write(b'\x5A\x05\x05\x02\x66') #text output
     ser.write(b'\x5A\x05\x05\x01\x65')  # standard output
     sleep(0.5)
-    ser.write(b'\x5A\x06\x03\x28\x00\x00')  # set frame rate to 40 per second 5A 06 03 LL HH 00
+    ser.write(b'\x5A\x06\x03\x64\x00\x00')  # set frame rate to 100 per second 5A 06 03 LL HH 00
     sleep(0.5)
     ser.write(b'\xAA\x55\xF0\x00\x00\x00\x00\x02')  # end config
     sleep(0.5)

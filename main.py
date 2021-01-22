@@ -1,6 +1,6 @@
 import serial
 import serial.tools.list_ports
-from time import sleep
+from time import sleep, time
 
 from serial.tools.list_ports_common import ListPortInfo
 
@@ -70,10 +70,15 @@ def getDatagram(ser, datafunc, eventfunc):
 
 def processData(distance, strength, temperature):
     print('distance: %d strength: %d temperature: %d' % (distance, strength, temperature))
+    line = '%f;%d;%d;%d\n' % (time(), distance, strength, temperature)
+    with open('g:/temp/lidar.csv', 'a') as f:
+        f.write(line)
 
 
 def processEvent(event):
     print('something happened: %s' % event)
+    with open('g:/temp/lidar_events.csv', 'a') as f:
+        f.write('%f;%s\n' % (time(), event))
 
 
 if __name__ == '__main__':

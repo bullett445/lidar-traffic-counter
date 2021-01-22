@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 pyserial = "*"
 matplotlib = "*"
+sklearn = "*"
 
 [dev-packages]
 

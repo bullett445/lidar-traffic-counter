@@ -1,9 +1,12 @@
+import sys
+
 import serial
 import serial.tools.list_ports
 from time import sleep, time
 
 from serial.tools.list_ports_common import ListPortInfo
 
+datagramNo = 0
 
 def openLidar():
     comports = serial.tools.list_ports.comports()
@@ -48,7 +51,11 @@ def findStart(ser):
 
 
 def getDatagram(ser, datafunc, eventfunc):
+    global datagramNo
     datagram = ser.read(9)
+    datagramNo += 1
+    if datagramNo == sys.maxsize:
+        datagramNo = 0
     # print(datagram.hex(':'))
     distL = datagram[2]
     distH = datagram[3]
@@ -65,12 +72,14 @@ def getDatagram(ser, datafunc, eventfunc):
         datafunc(distH * 256 + distL, strengthH * 256 + strengthL, tempH * 256 + tempL)
     else:
         eventfunc('checksum failure. reset.')
+        datagramNo = 0
         findStart(ser)
 
 
 def processData(distance, strength, temperature):
+    global datagramNo
     print('distance: %d strength: %d temperature: %d' % (distance, strength, temperature))
-    line = '%f;%d;%d;%d\n' % (time(), distance, strength, temperature)
+    line = '%f;%d;%d;%d;%d\n' % (time(), datagramNo, distance, strength, temperature)
     if distance < 4500:
         with open('c:/lidar/lidar.csv', 'a') as f:
             f.write(line)

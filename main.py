@@ -71,13 +71,14 @@ def getDatagram(ser, datafunc, eventfunc):
 def processData(distance, strength, temperature):
     print('distance: %d strength: %d temperature: %d' % (distance, strength, temperature))
     line = '%f;%d;%d;%d\n' % (time(), distance, strength, temperature)
-    with open('g:/temp/lidar.csv', 'a') as f:
-        f.write(line)
+    if distance < 4500:
+        with open('c:/lidar/lidar.csv', 'a') as f:
+            f.write(line)
 
 
 def processEvent(event):
     print('something happened: %s' % event)
-    with open('g:/temp/lidar_events.csv', 'a') as f:
+    with open('c:/lidar/lidar_events.csv', 'a') as f:
         f.write('%f;%s\n' % (time(), event))
 
 

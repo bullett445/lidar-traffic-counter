@@ -150,6 +150,7 @@ def eventHandler(event):
     print('start distance: %5d end distance: %5d points: %4d' % (startmeasure[1], endmeasure[1], len(event)))
     print('minimum distan: %5d maximum dist: %5d measure dist: %5d' % (mindist, maxdist, measuredDistance))
     print('minimum streng: %5d maximum stre: %5d' % (minstren, maxstren))
+    print(event)
     if len(event) < 10 or measuredDistance < 150 or duration > 10.0:
         print('discarded.')
         discardedEvents += 1

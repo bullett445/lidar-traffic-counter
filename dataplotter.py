@@ -11,7 +11,7 @@ timestamps = array.array('d')
 distances = array.array('i')
 strengths = array.array('i')
 eventBoundaries = array.array('d')
-eventBoundariesDiscarded = array.array('d')
+eventBoundariesDiscarded = array.array('b')
 firstTimestamp = 0
 
 
@@ -36,10 +36,12 @@ def plotData():
     plt.ylabel('distance [cm]')
     clb = plt.colorbar()
     clb.ax.set_title('strength')
-    for t in eventBoundaries:
-        plt.axvline(x=t - firstTimestamp, color='b')
-    for t in eventBoundariesDiscarded:
-        plt.axvline(x=t - firstTimestamp, color='y')
+    for i in range(len(eventBoundaries)):
+        plt.text(eventBoundaries[i] - firstTimestamp, 100, str(i))
+        if eventBoundariesDiscarded[i]:
+            plt.axvline(x=eventBoundaries[i] - firstTimestamp, color='y')
+        else:
+            plt.axvline(x=eventBoundaries[i] - firstTimestamp, color='b')
     plt.show()
 
 
@@ -53,10 +55,11 @@ def analyzeData():
             continue
         deltatime = ts - lagging
         if deltatime > 0.1:
+            eventBoundaries.append(ts)
             if eventHandler(event) != 0:
-                eventBoundariesDiscarded.append(ts)
+                eventBoundariesDiscarded.append(True)
             else:
-                eventBoundaries.append(ts)
+                eventBoundariesDiscarded.append(False)
 
             event = list()
         if 0.0001 < deltatime < 0.1:
@@ -124,7 +127,6 @@ totalEvents = 0
 
 def eventHandler(event):
     global discardedEvents, totalEvents
-    totalEvents += 1
     startmeasure = event[0]
     endmeasure = event[len(event) - 1]
     if startmeasure[1] > endmeasure[1]:
@@ -150,7 +152,9 @@ def eventHandler(event):
     print('start distance: %5d end distance: %5d points: %4d' % (startmeasure[1], endmeasure[1], len(event)))
     print('minimum distan: %5d maximum dist: %5d measure dist: %5d' % (mindist, maxdist, measuredDistance))
     print('minimum streng: %5d maximum stre: %5d' % (minstren, maxstren))
+    print('event number: %d' % totalEvents)
     print(event)
+    totalEvents += 1
     if len(event) < 10 or measuredDistance < 150 or duration > 10.0:
         print('discarded.')
         discardedEvents += 1

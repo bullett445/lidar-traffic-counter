@@ -1,13 +1,16 @@
 import array
 from operator import itemgetter
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.linear_model import LinearRegression
 
 
 class Event:
     def __init__(self, e):
-        self.event = e.copy()
+        self.event = list()
+        for (elem, i) in zip(e, range(len(e))):
+            self.event.append((elem[0], elem[1], elem[2], i))
         self.startmeasurement = self.event[0]
         self.endmeasurement = self.event[len(self.event) - 1]
         self.startTs = self.startmeasurement[0]
@@ -32,23 +35,35 @@ class Event:
                 self.maxstrength = m[2]
         self.measuredDistance = self.maxdistance - self.mindistance
 
-    def getSpeedFromMaxStrength(self):
+    def getSpeedFromMaxStrength(self, plot=False):
         sortedEvent = self.event.copy()
         sortedEvent.sort(key=itemgetter(2), reverse=True)
         xx = array.array('d')
         yy = array.array('d')
         topPoints = round(len(sortedEvent) * 0.2)
         for i in range(topPoints):
-            xx.append(sortedEvent[i][0])
+            xx.append(sortedEvent[i][3])
             yy.append(sortedEvent[i][1])
         x = np.array(xx)
         y = np.array(yy)
-        x = x.reshape(-1, 1)
-        model = LinearRegression()
-        model.fit(x, y)
-        r2 = model.score(x, y)
-        speed = model.coef_[0] / 100 * 3.6
-        return speed, r2, topPoints
+        model = np.polyfit(x, y, 1)
+        r = np.corrcoef(x, y)[0,1]
+        r2 = r ** 2
+        speed = model[0] * 3.6
+        if plot:
+            matrix = np.array(sortedEvent)
+            plt.scatter(matrix[:topPoints,3], matrix[:topPoints,1], c=matrix[:topPoints,2], marker='^')
+            plt.scatter(matrix[topPoints:, 3], matrix[topPoints:, 1], c=matrix[topPoints:, 2], marker='o')
+            plt.plot(matrix[:,3], model[0] * matrix[:,3] + model[1], linewidth=0.5)
+            plt.xlabel('frame id in event')
+            plt.ylabel('distance [cm]')
+            plt.ylim([self.mindistance - 10, self.maxdistance + 10])
+            clb = plt.colorbar()
+            clb.ax.set_title('strength')
+
+            plt.show()
+
+        return { "speed": speed, "r2": r2, "numberOfPoints": topPoints }
 
     def __str__(self):
         return 'duration %f\nstart distance: %5d end distance: %5d points: %4d\n'\

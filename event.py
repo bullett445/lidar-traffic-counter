@@ -47,14 +47,14 @@ class Event:
         x = np.array(xx)
         y = np.array(yy)
         model = np.polyfit(x, y, 1)
-        r = np.corrcoef(x, y)[0,1]
+        r = np.corrcoef(x, y)[0, 1]
         r2 = r ** 2
         speed = model[0] * 3.6
         if plot:
             matrix = np.array(sortedEvent)
-            plt.scatter(matrix[:topPoints,3], matrix[:topPoints,1], c=matrix[:topPoints,2], marker='^')
+            plt.scatter(matrix[:topPoints, 3], matrix[:topPoints, 1], c=matrix[:topPoints, 2], marker='^')
             plt.scatter(matrix[topPoints:, 3], matrix[topPoints:, 1], c=matrix[topPoints:, 2], marker='o')
-            plt.plot(matrix[:,3], model[0] * matrix[:,3] + model[1], linewidth=0.5)
+            plt.plot(matrix[:, 3], model[0] * matrix[:, 3] + model[1], linewidth=0.5)
             plt.xlabel('frame id in event')
             plt.ylabel('distance [cm]')
             plt.ylim([self.mindistance - 10, self.maxdistance + 10])
@@ -63,10 +63,10 @@ class Event:
 
             plt.show()
 
-        return { "speed": speed, "r2": r2, "numberOfPoints": topPoints }
+        return {"speed": speed, "r2": r2, "numberOfPoints": topPoints}
 
     def __str__(self):
-        return 'duration %f\nstart distance: %5d end distance: %5d points: %4d\n'\
+        return 'duration %f\nstart distance: %5d end distance: %5d points: %4d\n' \
                'minimum distan: %5d maximum dist: %5d measure dist: %5d\nminimum streng: %5d maximum stre: %5d\n' % \
                (self.duration, self.startmeasurement[1], self.endmeasurement[1], len(self.event), self.mindistance,
                 self.maxdistance, self.measuredDistance, self.minstrength, self.maxstrength) + \
@@ -105,4 +105,5 @@ class Event:
     def getEndTimestamp(self):
         return self.endTs
 
-
+    def getNumberOfPoints(self):
+        return len(self.event)

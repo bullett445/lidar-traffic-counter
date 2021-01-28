@@ -1,11 +1,10 @@
 import csv
-from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import array
 import statistics
-import numpy as np
-from sklearn.linear_model import LinearRegression
+
+from event import Event
 
 timestamps = array.array('d')
 distances = array.array('i')
@@ -70,99 +69,30 @@ def analyzeData():
     print('guessed street middle = %d' % (statistics.median(distances)))
 
 
-def maxStrengthSpeed(event):
-    event.sort(key=itemgetter(2), reverse=True)
-    xx = array.array('d')
-    yy = array.array('d')
-    topPoints = round(len(event) * 0.2)
-    for i in range(topPoints):
-        xx.append(event[i][0])
-        yy.append(event[i][1])
-    x = np.array(xx)
-    y = np.array(yy)
-    x = x.reshape(-1, 1)
-    model = LinearRegression()
-    model.fit(x, y)
-    print('R^2: %f points included: %d' % (model.score(x, y), topPoints))
-    return model.coef_ / 100 * 3.6
-
-def fromMiddleDistanceSpeed(event):
-    startmeasure = event[0]
-    endmeasure = event[len(event) - 1]
-    mindist = 50000
-    maxdist = 0
-    for m in event:
-        if m[1] < mindist:
-            mindist = m[1]
-        if m[1] > maxdist:
-            maxdist = m[1]
-    middledistance = (maxdist + mindist) / 2
-    i = 0
-    if startmeasure[1] < endmeasure[1]:
-        for m in event:
-            if m[1] >= middledistance:
-                break
-            i += 1
-    else:
-        for m in event:
-            if m[1] <= middledistance:
-                break
-            i += 1
-    xx = array.array('d')
-    yy = array.array('d')
-    for j in range(i-5, i+5):
-        xx.append(event[j][0])
-        yy.append(event[j][1])
-    x = np.array(xx)
-    y = np.array(yy)
-    x = x.reshape(-1, 1)
-    model = LinearRegression()
-    model.fit(x, y)
-    print('R^2: %f middle point: %d' % (model.score(x, y), i))
-    return model.coef_ / 100 * 3.6
-
 discardedEvents = 0
 totalEvents = 0
 
 
-def eventHandler(event):
+def eventHandler(eventData):
     global discardedEvents, totalEvents
-    startmeasure = event[0]
-    endmeasure = event[len(event) - 1]
-    if startmeasure[1] > endmeasure[1]:
-        guessedDirection = 'TOWARDS'
-    else:
-        guessedDirection = 'AWAY'
-    mindist = 50000
-    maxdist = 0
-    minstren = 70000
-    maxstren = 0
-    for m in event:
-        if m[1] < mindist:
-            mindist = m[1]
-        if m[1] > maxdist:
-            maxdist = m[1]
-        if m[2] < minstren:
-            minstren = m[2]
-        if m[2] > maxstren:
-            maxstren = m[2]
-    measuredDistance = maxdist - mindist
-    duration = endmeasure[0] - startmeasure[0]
-    print('duration %f' % (duration))
-    print('start distance: %5d end distance: %5d points: %4d' % (startmeasure[1], endmeasure[1], len(event)))
-    print('minimum distan: %5d maximum dist: %5d measure dist: %5d' % (mindist, maxdist, measuredDistance))
-    print('minimum streng: %5d maximum stre: %5d' % (minstren, maxstren))
-    print('event number: %d' % totalEvents)
+    event = Event(eventData)
+
+    print("-- %d ---------------------------------" % totalEvents)
     print(event)
+
     totalEvents += 1
-    if len(event) < 10 or measuredDistance < 150 or duration > 10.0:
+    if event.getNumberOfPoints() < 10 \
+            or event.getMeasuredDistance() < 150 \
+            or event.getDuration() > 10.0\
+            or event.maxstrength < 200:
         print('discarded.')
         discardedEvents += 1
         return 1
+
     print('accepted.')
-    speed = maxStrengthSpeed(event)
-    speed2 = fromMiddleDistanceSpeed(event)
-    print('speed: %f or %f direction %s' % (speed, speed2, guessedDirection))
+    speed = event.getSpeedFromMaxStrength(plot=True)
+
+    print('speed: %f direction %s' % (speed["speed"], event.getDirection()))
     return 0
 
 

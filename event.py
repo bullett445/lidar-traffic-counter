@@ -1,5 +1,7 @@
 import array
 from operator import itemgetter
+
+import matplotlib.colors
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -36,6 +38,7 @@ class Event:
     def getSpeedFromMaxStrength(self, plot=False):
         sortedEvent = self.event.copy()
         sortedEvent.sort(key=itemgetter(2), reverse=True)
+        print(sortedEvent)
         xx = array.array('d')
         yy = array.array('d')
         topPoints = round(len(sortedEvent) * 0.2)
@@ -50,8 +53,9 @@ class Event:
         speed = model[0] * 3.6
         if plot:
             matrix = np.array(sortedEvent)
-            plt.scatter(matrix[:topPoints, 3], matrix[:topPoints, 1], c=matrix[:topPoints, 2], marker='^')
-            plt.scatter(matrix[topPoints:, 3], matrix[topPoints:, 1], c=matrix[topPoints:, 2], marker='o')
+            colorNormalizer = matplotlib.colors.Normalize(self.minstrength, self.maxstrength)
+            plt.scatter(matrix[:topPoints, 3], matrix[:topPoints, 1], c=matrix[:topPoints, 2], norm=colorNormalizer, marker='^')
+            plt.scatter(matrix[topPoints:, 3], matrix[topPoints:, 1], c=matrix[topPoints:, 2], norm=colorNormalizer, marker='o')
             plt.plot(matrix[:, 3], model[0] * matrix[:, 3] + model[1], linewidth=0.5)
             plt.xlabel('frame id in event')
             plt.ylabel('distance [cm]')

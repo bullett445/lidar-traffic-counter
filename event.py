@@ -3,8 +3,6 @@ from operator import itemgetter
 import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.linear_model import LinearRegression
-
 
 class Event:
     def __init__(self, e):

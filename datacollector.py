@@ -1,99 +1,41 @@
-import sys
-
-import serial
-import serial.tools.list_ports
-from time import sleep, time
-
-from serial.tools.list_ports_common import ListPortInfo
-
-datagramNo = 0
-
-def openLidar():
-    comports = serial.tools.list_ports.comports()
-    for i in comports:
-        print(i)
-
-    comports = serial.tools.list_ports.grep('CH340')
-    comportList: list[ListPortInfo] = list(comports)
-    portName = comportList[0].device
-
-    ser = serial.Serial(portName, 115200,
-                        bytesize=serial.EIGHTBITS,
-                        parity=serial.PARITY_NONE,
-                        stopbits=serial.STOPBITS_ONE,
-                        timeout=None)
-    return ser
+from time import time
+import benewake_tf02pro as lidar
 
 
-def initLidar(ser):
-    ser.write(b'\xAA\x55\xF0\x00\xFF\xFF\xFF\xFF')  # reset
-    sleep(1)
-    ser.write(b'\xAA\x55\xF0\x00\x01\x00\x00\x02')  # start config
-    sleep(0.5)
-    # ser.write(b'\x5A\x05\x05\x02\x66') #text output
-    ser.write(b'\x5A\x05\x05\x01\x65')  # standard output
-    sleep(0.5)
-    ser.write(b'\x5A\x06\x03\x64\x00\x00')  # set frame rate to 100 per second 5A 06 03 LL HH 00
-    sleep(0.5)
-    ser.write(b'\xAA\x55\xF0\x00\x00\x00\x00\x02')  # end config
-    sleep(0.5)
+def logTimestamp(f, data):
+    f.write('t;%f;%d\n' % (time(), data[2]))
 
 
-def findStart(ser):
-    while True:
-        b = b'\x00'
-        while b != b'\x59':
-            b = ser.read()
-        b = ser.read()
-        if b == b'\x59':
-            break
-    ser.read(7)
+def logError(f):
+    f.write('f;checksum;%f\n' % (time()))
 
 
-def getDatagram(ser, datafunc, eventfunc):
-    global datagramNo
-    datagram = ser.read(9)
-    datagramNo += 1
-    if datagramNo == sys.maxsize:
-        datagramNo = 0
-    # print(datagram.hex(':'))
-    distL = datagram[2]
-    distH = datagram[3]
-    strengthL = datagram[4]
-    strengthH = datagram[5]
-    tempL = datagram[6]
-    tempH = datagram[7]
-    checksum = datagram[8]
-    checksumCalculated = 0
-    for i in range(8):
-        checksumCalculated += datagram[i]
-    checksumCalculated = checksumCalculated & 0xFF
-    if checksum == checksumCalculated:
-        datafunc(distH * 256 + distL, strengthH * 256 + strengthL, tempH * 256 + tempL)
-    else:
-        eventfunc('checksum failure. reset.')
-        datagramNo = 0
-        findStart(ser)
+def logData(f, data):
+    f.write('d;%d;%d\n' % (data[0], data[1]))
 
 
-def processData(distance, strength, temperature):
-    global datagramNo
-    print('distance: %d strength: %d temperature: %d' % (distance, strength, temperature))
-    line = '%f;%d;%d;%d;%d\n' % (time(), datagramNo, distance, strength, temperature)
-    if distance < 4500:
-        with open('c:/lidar/lidar.csv', 'a') as f:
-            f.write(line)
-
-
-def processEvent(event):
-    print('something happened: %s' % event)
-    with open('c:/lidar/lidar_events.csv', 'a') as f:
-        f.write('%f;%s\n' % (time(), event))
-
+activeEvent = False
+voidDistance = 600  # default 4500 = 45m
 
 if __name__ == '__main__':
-    serial = openLidar()
-    initLidar(serial)
-    findStart(serial)
-    while True:
-        getDatagram(serial, processData, processEvent)
+    lidar.openLidar()
+
+    with open('c:/lidar/lidar.csv', 'a') as file:
+        while True:
+            try:
+                datapoint = lidar.readDatagram()
+                if datapoint[0] < voidDistance:
+                    if not activeEvent:
+                        activeEvent = True
+                        logTimestamp(file, datapoint)
+                    logData(file, datapoint)
+                else:
+                    if activeEvent:
+                        activeEvent = False
+                        logTimestamp(file, datapoint)
+                        file.flush()
+                print(datapoint)
+            except lidar.LidarReadException:
+                logError(file)
+                activeEvent = False
+                print('read error.')

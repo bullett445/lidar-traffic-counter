@@ -6,7 +6,11 @@ import serial.tools.list_ports
 from time import sleep
 from serial.tools.list_ports_common import ListPortInfo
 
-port = None
+DISTANCE = 0
+STRENGTH = 1
+TEMPERATURE = 2
+
+port: serial.Serial = None
 inSync = False
 
 
@@ -86,3 +90,12 @@ def readDatagram():
     else:
         inSync = False
         raise LidarReadException("checksum error.")
+
+
+if __name__ == '__main__':
+    openLidar()
+    while True:
+        try:
+            print(readDatagram())
+        except:
+            print('Exception.')

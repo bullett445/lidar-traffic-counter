@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/lidar.iml" filepath="$PROJECT_DIR$/.idea/lidar.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lidar-traffic-counter.iml" filepath="$PROJECT_DIR$/.idea/lidar-traffic-counter.iml" />
     </modules>
   </component>
 </project>

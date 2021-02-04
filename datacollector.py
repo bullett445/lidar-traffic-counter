@@ -2,8 +2,8 @@ from time import time
 import benewake_tf02pro as lidar
 
 
-def logTimestamp(f, data):
-    f.write('t;%f;%d\n' % (time(), data[lidar.TEMPERATURE]))
+def logTimestamp(f, flag, data):
+    f.write('%s;%f;%d\n' % (flag, time(), data[lidar.TEMPERATURE]))
 
 
 def logError(f):
@@ -15,7 +15,7 @@ def logData(f, data):
 
 
 activeEvent = False
-voidDistance = 600  # default 4500 = 45m
+voidDistance = 4500  # default 4500 = 45m
 
 if __name__ == '__main__':
     print('Initializing...')
@@ -28,12 +28,12 @@ if __name__ == '__main__':
                 if datapoint[lidar.DISTANCE] < voidDistance:
                     if not activeEvent:
                         activeEvent = True
-                        logTimestamp(file, datapoint)
+                        logTimestamp(file, "s", datapoint)
                     logData(file, datapoint)
                 else:
                     if activeEvent:
                         activeEvent = False
-                        logTimestamp(file, datapoint)
+                        logTimestamp(file, "e", datapoint)
                         file.flush()
                 if activeEvent:
                     print('%4.2fm %5d %s' % (datapoint[lidar.DISTANCE] / 100,

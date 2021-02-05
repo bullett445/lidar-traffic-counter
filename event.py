@@ -6,17 +6,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+class EventTooSmallException(Exception):
+    pass
+
+
+TIMESTAMP = 0
+DISTANCE = 1
+STRENGTH = 2
+INDEX = 3
+VALIDITY = 4
+
+
 class Event:
     def __init__(self, e):
+        self.numberOfPoints = len(e)
         self.event = list()
         for (elem, i) in zip(e, range(len(e))):
-            self.event.append((elem[0], elem[1], elem[2], i))
-        self.startmeasurement = self.event[0]
+            self.event.append([elem[TIMESTAMP], elem[DISTANCE], elem[STRENGTH], i, True])
+        self.startmeasurement = self.event[TIMESTAMP]
         self.endmeasurement = self.event[len(self.event) - 1]
-        self.startTs = self.startmeasurement[0]
-        self.endTs = self.endmeasurement[0]
+        self.startTs = self.startmeasurement[TIMESTAMP]
+        self.endTs = self.endmeasurement[TIMESTAMP]
         self.duration = self.endTs - self.startTs
-        if self.startmeasurement[1] > self.endmeasurement[1]:
+        if self.startmeasurement[DISTANCE] > self.endmeasurement[DISTANCE]:
             self.guessedDirection = 'TOWARDS'
         else:
             self.guessedDirection = 'AWAY'
@@ -25,26 +37,43 @@ class Event:
         self.minstrength = 70000
         self.maxstrength = 0
         for m in self.event:
-            if m[1] < self.mindistance:
-                self.mindistance = m[1]
-            if m[1] > self.maxdistance:
-                self.maxdistance = m[1]
-            if m[2] < self.minstrength:
-                self.minstrength = m[2]
-            if m[2] > self.maxstrength:
-                self.maxstrength = m[2]
+            if m[DISTANCE] < self.mindistance:
+                self.mindistance = m[DISTANCE]
+            if m[DISTANCE] > self.maxdistance:
+                self.maxdistance = m[DISTANCE]
+            if m[STRENGTH] < self.minstrength:
+                self.minstrength = m[STRENGTH]
+            if m[STRENGTH] > self.maxstrength:
+                self.maxstrength = m[STRENGTH]
         self.measuredDistance = self.maxdistance - self.mindistance
+        self.limitDistance = 0.1 * self.measuredDistance + self.mindistance
+        if self.guessedDirection == 'TOWARDS':
+            refStart = self.seekSideReflectionStart(self.event)
+            for i in range(refStart, len(self.event)):
+                self.event[i][VALIDITY] = False
+            self.validPointsCount = refStart
+        else:
+            refStart = len(self.event) - self.seekSideReflectionStart(reversed(self.event))
+            for i in range(0, refStart):
+                self.event[i][VALIDITY] = False
+            self.validPointsCount = len(self.event) - refStart
+        print(self.event)
 
     def getSpeedFromMaxStrength(self, plot=False):
+        def sortKey(e):
+            if e[VALIDITY]:
+                return e[STRENGTH] + 100000
+            else:
+                return e[STRENGTH]
+
         sortedEvent = self.event.copy()
-        sortedEvent.sort(key=itemgetter(2), reverse=True)
-        print(sortedEvent)
+        sortedEvent.sort(key=sortKey, reverse=True)
         xx = array.array('d')
         yy = array.array('d')
-        topPoints = round(len(sortedEvent) * 0.2)
+        topPoints = round(self.validPointsCount * 0.4)
         for i in range(topPoints):
-            xx.append(sortedEvent[i][3])
-            yy.append(sortedEvent[i][1])
+            xx.append(sortedEvent[i][INDEX])
+            yy.append(sortedEvent[i][DISTANCE])
         x = np.array(xx)
         y = np.array(yy)
         model = np.polyfit(x, y, 1)
@@ -54,9 +83,15 @@ class Event:
         if plot:
             matrix = np.array(sortedEvent)
             colorNormalizer = matplotlib.colors.Normalize(self.minstrength, self.maxstrength)
-            plt.scatter(matrix[:topPoints, 3], matrix[:topPoints, 1], c=matrix[:topPoints, 2], norm=colorNormalizer, marker='^')
-            plt.scatter(matrix[topPoints:, 3], matrix[topPoints:, 1], c=matrix[topPoints:, 2], norm=colorNormalizer, marker='o')
-            plt.plot(matrix[:, 3], model[0] * matrix[:, 3] + model[1], linewidth=0.5)
+            plt.scatter(matrix[:topPoints, INDEX], matrix[:topPoints, DISTANCE],
+                        c=matrix[:topPoints, STRENGTH], norm=colorNormalizer, marker='^')
+            plt.scatter(matrix[topPoints:self.validPointsCount, INDEX], matrix[topPoints:self.validPointsCount, DISTANCE],
+                        c=matrix[topPoints:self.validPointsCount, STRENGTH], norm=colorNormalizer, marker='o')
+            plt.scatter(matrix[self.validPointsCount:, INDEX],
+                        matrix[self.validPointsCount:, DISTANCE],
+                        c=matrix[self.validPointsCount:, STRENGTH], norm=colorNormalizer, marker='+')
+            plt.plot(matrix[:, 3], model[0] * matrix[:, INDEX] + model[1], linewidth=0.5)
+            plt.axhline(self.limitDistance)
             plt.xlabel('frame id in event')
             plt.ylabel('distance [cm]')
             plt.ylim([self.mindistance - 10, self.maxdistance + 10])
@@ -66,6 +101,13 @@ class Event:
             plt.show()
 
         return {"speed": speed, "r2": r2, "numberOfPoints": topPoints}
+
+    def seekSideReflectionStart(self, event):
+        i = 0
+        for e in event:
+            if e[1] < self.limitDistance:
+                return i
+            i += 1
 
     def __str__(self):
         return 'duration %f\nstart distance: %5d end distance: %5d points: %4d\n' \
@@ -108,4 +150,4 @@ class Event:
         return self.endTs
 
     def getNumberOfPoints(self):
-        return len(self.event)
+        return self.numberOfPoints

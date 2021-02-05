@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import array
 import statistics
 
-from event import Event
+from event import Event, EventTooSmallException
 
 timestamps = array.array('d')
 distances = array.array('i')
@@ -14,9 +14,9 @@ eventBoundariesDiscarded = array.array('b')
 firstTimestamp = 0
 
 
-def readData():
+def readDataOldFormat():
     global timestamps, distances, strengths, firstTimestamp
-    with open('data/front_70cm_largerangle.csv') as f:
+    with open('data/old format/front_70cm_largerangle.csv') as f:
         reader = csv.reader(f, delimiter=';')
         for line in reader:
             if firstTimestamp == 0:
@@ -24,6 +24,30 @@ def readData():
             timestamps.append(float(line[0]))
             distances.append(int(line[1]))
             strengths.append(int(line[2]))
+
+
+def readData():
+    global timestamps, distances, strengths, firstTimestamp
+    with open('data/2lane_front.csv') as f:
+        reader = csv.reader(f, delimiter=';')
+        for line in reader:
+            entryType = line[0]
+            if entryType == 's':
+                eventTimestamp = float(line[1])
+                if firstTimestamp == 0:
+                    firstTimestamp = eventTimestamp
+            elif entryType == 'e':
+                pass
+            elif entryType == 'd':
+                timestamps.append(eventTimestamp)
+                distances.append(int(line[1]))
+                strengths.append(int(line[2]))
+                eventTimestamp += 0.01
+            elif entryType == 'f':
+                pass
+            else:
+                print('unknown entry.')
+                exit(1)
 
 
 def plotData():
@@ -71,16 +95,22 @@ def analyzeData():
 
 discardedEvents = 0
 totalEvents = 0
-
+trimOffFirst = 5
+trimOffLast = 2
 
 def eventHandler(eventData):
     global discardedEvents, totalEvents
-    event = Event(eventData)
-
+    totalEvents += 1
     print("-- %d ---------------------------------" % totalEvents)
+
+    if len(eventData) < trimOffLast + trimOffFirst + 10:
+        print('too short.')
+        discardedEvents += 1
+        return 1
+
+    event = Event(eventData[trimOffFirst:len(eventData)-trimOffLast])
     print(event)
 
-    totalEvents += 1
     if event.getNumberOfPoints() < 10 \
             or event.getMeasuredDistance() < 150 \
             or event.getDuration() > 10.0\

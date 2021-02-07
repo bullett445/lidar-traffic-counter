@@ -28,10 +28,10 @@ def openLidar():
     #for i in comports:
     #    print(i)
 
-    comports = serial.tools.list_ports.grep('CH340')
+    comports = serial.tools.list_ports.grep('CH340|ttyAMA0')
     comportList: list[ListPortInfo] = list(comports)
     if len(comportList) < 1:
-        raise LidarNotFoundException("No CH340 in comport list.")
+        raise LidarNotFoundException("No CH340 or ttyAMA0 in comport list.")
 
     portName = comportList[0].device
 

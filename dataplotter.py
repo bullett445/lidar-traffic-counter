@@ -120,7 +120,7 @@ def eventHandler(eventData):
         return 1
 
     print('accepted.')
-    speed = event.getSpeedFromMaxStrength(plot=True)
+    speed = event.getSpeedFromMaxStrength(plot=False)
 
     print('speed: %f direction %s' % (speed["speed"], event.getDirection()))
     return 0

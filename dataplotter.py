@@ -28,7 +28,7 @@ def readDataOldFormat():
 
 def readData():
     global timestamps, distances, strengths, firstTimestamp
-    with open('data/2lane_front.csv') as f:
+    with open('data/4lane_back.csv') as f:
         reader = csv.reader(f, delimiter=';')
         for line in reader:
             entryType = line[0]
